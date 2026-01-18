@@ -11,7 +11,7 @@ import { CreateProductionOrderService } from '../application/create-production-o
 import * as productionOrderSchema from '../domain/production-order.schema';
 import { InvalidWasteLimitError } from '../domain/production.errors';
 import { ProductionRuntimeLayer } from '../production.layer';
-import { ZodValidationPipe } from 'src/shared/pipes/zod-validation.pipe';
+import { ZodValidationPipe } from '../../shared/pipes/zod-validation.pipe';
 
 @Controller('production')
 export class ProductionController {

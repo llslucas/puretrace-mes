@@ -1,8 +1,17 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { ProductionModule } from './production/production.module';
+import { TelemetryModule } from './telemetry/telemetry.module';
 
 @Module({
-  imports: [ProductionModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      expandVariables: true,
+    }),
+    ProductionModule,
+    TelemetryModule,
+  ],
   controllers: [],
   providers: [],
 })

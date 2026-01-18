@@ -1,98 +1,89 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# PureTrace MES 🏭🌱
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+> **Manufacturing Execution System (MES) focado em Rastreabilidade e Conformidade ESG.**
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+O **PureTrace** é um backend desenvolvido em **Node.js** que aplica princípios de **Programação Funcional** moderna para garantir resiliência e corretude em processos industriais. O foco do projeto não é apenas a execução da manufatura, mas a garantia de que os lotes produzidos respeitam limites de impacto ambiental (Sustentabilidade/ESG).
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🚀 Tecnologias e Paradigmas
 
-## Project setup
+Este projeto foge do padrão MVC tradicional e adota uma abordagem **Domain-Driven Design (DDD)** funcional.
 
-```bash
-$ npm install
+* **Linguagem:** TypeScript (Strict Mode).
+* **Framework:** [NestJS](https://nestjs.com/) (Camada HTTP e Modularização).
+* **Functional Core:** [Effect](https://effect.website/) (Gerenciamento de efeitos colaterais, tratamento de erros e injeção de dependência).
+* **Validação:** [Zod](https://zod.dev/) (Schema Validation & Type Inference).
+* **Testes:** Jest (Focado em testes de lógica pura).
+* *(Em breve)* **Reatividade:** RxJS (Telemetria em tempo real).
+
+---
+
+## 🧠 Arquitetura e Decisões Técnicas
+
+O diferencial deste projeto é a utilização da biblioteca **Effect** como uma "extensão da linguagem" para trazer robustez ao ecossistema TypeScript.
+
+### 1. Railway Oriented Programming (Tratamento de Erros)
+Abolimos o uso de `try/catch` e exceções não controladas na lógica de negócio.
+* **Como fazemos:** As funções de domínio retornam tipos `Either<Error, Success>` ou `Effect<Success, Error>`.
+* **Benefício:** A assinatura da função diz explicitamente o que pode dar errado. O compilador obriga o desenvolvedor a tratar os erros de domínio (ex: `InvalidWasteLimitError`).
+
+### 2. Domain-Driven Design (DDD) Funcional
+Separamos rigorosamente dados de comportamento.
+* **Schema:** Definido com Zod (ex: `ProductionOrderSchema`). Garante que os dados *são* o que dizem ser.
+* **Model:** Módulos de funções puras que contêm as regras de negócio (ex: Cálculo de limite de desperdício).
+* **Repository:** Definido via Interfaces (`Context.Tag` do Effect) para permitir troca fácil de infraestrutura.
+
+### 3. Gerenciamento de Estado Seguro
+Utilizamos primitivas de concorrência (`Ref`) para gerenciar estado mutável de forma segura e atômica, evitando *race conditions* comuns em aplicações Node.js tradicionais.
+
+### 4. Integração NestJS + Effect
+Utilizamos um `ManagedRuntime` para manter o contexto do Effect vivo dentro do ciclo de vida do NestJS, permitindo que as duas tecnologias coexistam: o NestJS cuida do HTTP/Roteamento e o Effect cuida de toda a lógica e orquestração.
+
+---
+
+## 📂 Estrutura do Projeto
+
+A estrutura reflete os *Bounded Contexts* do DDD:
+
+```text
+src/
+├── production/                  # Contexto: Produção
+│   ├── api/                     # Controllers (NestJS)
+│   ├── application/             # Use Cases / Services (Effect)
+│   ├── domain/                  # Regras de Negócio e Schemas (Puro)
+│   │   ├── production-order.model.ts
+│   │   ├── production-order.schema.ts
+│   │   ├── production.errors.ts
+│   │   └── production-order.repository.ts (Interface)
+│   ├── infrastructure/          # Implementação de Repositórios
+│   └── production.layer.ts      # Wiring de Dependências (Effect Layers)
+├── shared/                      # Utilitários globais
+│   └── pipes/                   # Pipes de validação (Zod)
+└── app.module.ts
 ```
 
-## Compile and run the project
+---
+
+## ⚡ Como Rodar
+
+### Pré-requisitos
+- Node.js (v18+)
+- NPM ou Yarn
+
+### Instalação
 
 ```bash
-# development
-$ npm run start
+# Clone o repositório
+git clone [https://github.com/llslucas/puretrace-mes.git](https://github.com/llslucas/puretrace-mes.git)
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Instale as dependências
+npm install
 ```
 
-## Run tests
+### Execução
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Rodar em modo de desenvolvimento (Watch mode)
+npm run start:dev
 ```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
