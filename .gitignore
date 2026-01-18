@@ -61,3 +61,4 @@ mosquitto/log
 
 # Docker directories
 .docker
+/generated/prisma
