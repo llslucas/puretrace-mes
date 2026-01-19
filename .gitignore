@@ -58,3 +58,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Mosquitto
 mosquitto/data
 mosquitto/log
+
+# Docker directories
+.docker
+/generated/prisma
