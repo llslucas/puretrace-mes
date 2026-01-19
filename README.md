@@ -1,89 +1,119 @@
 # PureTrace MES 🏭🌱
 
-> **Manufacturing Execution System (MES) focado em Rastreabilidade e Conformidade ESG.**
+> **Manufacturing Execution System (MES) com Arquitetura Hexagonal, DDD e Programação Funcional.**
 
-O **PureTrace** é um backend desenvolvido em **Node.js** que aplica princípios de **Programação Funcional** moderna para garantir resiliência e corretude em processos industriais. O foco do projeto não é apenas a execução da manufatura, mas a garantia de que os lotes produzidos respeitam limites de impacto ambiental (Sustentabilidade/ESG).
+O **PureTrace** é um backend industrial robusto desenvolvido em **Node.js (NestJS)**. Ele demonstra como aplicar princípios de **Engenharia de Software Moderna** para resolver problemas complexos de manufatura e sustentabilidade (ESG), garantindo que regras de negócio sejam invioláveis e que a infraestrutura seja plugável.
 
 ---
 
-## 🚀 Tecnologias e Paradigmas
+## 🏗️ Arquitetura e Paradigmas
 
-Este projeto foge do padrão MVC tradicional e adota uma abordagem **Domain-Driven Design (DDD)** funcional.
+Este projeto foi desenvolvido como um projeto de portfólio avançado, demonstrando a união entre a robustez corporativa do NestJS e a segurança matemática da Programação Funcional.
 
+### 1. Domain-Driven Design (DDD) & Rich Models
+A lógica de negócio não está espalhada em Services. Ela reside em **Entidades Ricas**.
+* **Exemplo:** A regra de que *"o desperdício não pode exceder 10%"* não é uma validação no Controller ou Service. Ela pertence à entidade `ProductionOrderModel`. É impossível instanciar uma ordem inválida no sistema.
+
+### 2. Functional Core, Imperative Shell
+Utilizamos a biblioteca **[Effect](https://effect.website/)** para criar um núcleo funcional puro.
+* **Core (Domínio/Use Cases):** Funções puras, sem exceções (`throw`), retornando descrições de programas (`Effect<Success, Error>`).
+* **Shell (NestJS):** Lida com a injeção de dependência, controllers HTTP e conexão com banco de dados, executando os efeitos na "borda" do sistema.
+
+### 3. Hexagonal Architecture (Ports & Adapters)
+A aplicação desconhece o banco de dados ou o protocolo de IoT.
+* **Ports:** Interfaces definidas no Domínio (ex: `ProductionOrderRepository`, `TelemetryListener`).
+* **Adapters:** Implementações na Infraestrutura (ex: `PrismaProductionOrderRepository`, `MqttTelemetryListener`).
+Isso nos permite trocar Postgres por In-Memory ou MQTT por Kafka sem tocar numa linha de regra de negócio.
+
+---
+
+## 🛠️ Tech Stack
+
+* **Framework:** [NestJS](https://nestjs.com/) (Orquestração e DI).
 * **Linguagem:** TypeScript (Strict Mode).
-* **Framework:** [NestJS](https://nestjs.com/) (Camada HTTP e Modularização).
-* **Functional Core:** [Effect](https://effect.website/) (Gerenciamento de efeitos colaterais, tratamento de erros e injeção de dependência).
-* **Validação:** [Zod](https://zod.dev/) (Schema Validation & Type Inference).
-* **Testes:** Jest (Focado em testes de lógica pura).
-* *(Em breve)* **Reatividade:** RxJS (Telemetria em tempo real).
+* **Functional Lib:** [Effect](https://effect.website/) (Error Handling, Pipelines).
+* **Database:** PostgreSQL + [Prisma ORM](https://www.prisma.io/).
+* **Real-time:** [RxJS](https://rxjs.dev/) + Server-Sent Events (SSE).
+* **IoT:** MQTT (Mosquitto) para telemetria de máquinas.
+* **Validation:** [Zod](https://zod.dev/).
+* **Infra:** Docker & Docker Compose.
 
 ---
 
-## 🧠 Arquitetura e Decisões Técnicas
+## 📂 Estrutura de Pastas (Screaming Architecture)
 
-O diferencial deste projeto é a utilização da biblioteca **Effect** como uma "extensão da linguagem" para trazer robustez ao ecossistema TypeScript.
-
-### 1. Railway Oriented Programming (Tratamento de Erros)
-Abolimos o uso de `try/catch` e exceções não controladas na lógica de negócio.
-* **Como fazemos:** As funções de domínio retornam tipos `Either<Error, Success>` ou `Effect<Success, Error>`.
-* **Benefício:** A assinatura da função diz explicitamente o que pode dar errado. O compilador obriga o desenvolvedor a tratar os erros de domínio (ex: `InvalidWasteLimitError`).
-
-### 2. Domain-Driven Design (DDD) Funcional
-Separamos rigorosamente dados de comportamento.
-* **Schema:** Definido com Zod (ex: `ProductionOrderSchema`). Garante que os dados *são* o que dizem ser.
-* **Model:** Módulos de funções puras que contêm as regras de negócio (ex: Cálculo de limite de desperdício).
-* **Repository:** Definido via Interfaces (`Context.Tag` do Effect) para permitir troca fácil de infraestrutura.
-
-### 3. Gerenciamento de Estado Seguro
-Utilizamos primitivas de concorrência (`Ref`) para gerenciar estado mutável de forma segura e atômica, evitando *race conditions* comuns em aplicações Node.js tradicionais.
-
-### 4. Integração NestJS + Effect
-Utilizamos um `ManagedRuntime` para manter o contexto do Effect vivo dentro do ciclo de vida do NestJS, permitindo que as duas tecnologias coexistam: o NestJS cuida do HTTP/Roteamento e o Effect cuida de toda a lógica e orquestração.
-
----
-
-## 📂 Estrutura do Projeto
-
-A estrutura reflete os *Bounded Contexts* do DDD:
+A estrutura reflete a intenção do sistema, não apenas tipos de arquivos.
 
 ```text
 src/
-├── production/                  # Contexto: Produção
-│   ├── api/                     # Controllers (NestJS)
-│   ├── application/             # Use Cases / Services (Effect)
-│   ├── domain/                  # Regras de Negócio e Schemas (Puro)
-│   │   ├── production-order.model.ts
-│   │   ├── production-order.schema.ts
-│   │   ├── production.errors.ts
-│   │   └── production-order.repository.ts (Interface)
-│   ├── infrastructure/          # Implementação de Repositórios
-│   └── production.layer.ts      # Wiring de Dependências (Effect Layers)
-├── shared/                      # Utilitários globais
-│   └── pipes/                   # Pipes de validação (Zod)
-└── app.module.ts
+├── production/
+│   ├── api/                     # Controllers (Interface Layer)
+│   ├── application/             # Services NestJS (Orquestradores)
+│   ├── domain/                  # O Núcleo Puro (Sem NestJS, sem Prisma)
+│   │   ├── entities/            # Entidades (Interfaces e Models)
+│   │   ├── use-cases/           # Regras de fluxo (ex: CreateOrderUseCase)
+│   ├── infra/                   # Repositórios
+│   └── production.module.ts     # Wiring (Injeção de Dependência)
+├── telemetry/                   # Módulo de Monitoramento IoT
+│   ├── domain/                  # Portas e Tipos
+│   ├── infra/                   # Adaptador MQTT (Hexagonal)
+│   └── api/                     # Controller SSE (Real-time stream)
+├── shared/
+│   ├── pipes/                   # Pipes de Validação do Nest
+└── └── database/                # Implementação concreta do Database Module para uso em vários domínios se necessário
 ```
 
----
-
-## ⚡ Como Rodar
-
+## 🚀 Como Rodar
 ### Pré-requisitos
 - Node.js (v18+)
-- NPM ou Yarn
+- Docker & Docker Compose
 
-### Instalação
+### 1. Subir Infraestrutura (Banco + Broker MQTT)
 
-```bash
-# Clone o repositório
-git clone [https://github.com/llslucas/puretrace-mes.git](https://github.com/llslucas/puretrace-mes.git)
-
-# Instale as dependências
-npm install
+```Bash
+docker-compose up -d
 ```
 
-### Execução
+Isso iniciará o PostgreSQL (porta 5432) e o Mosquitto MQTT (porta 1883).
 
-```bash
-# Rodar em modo de desenvolvimento (Watch mode)
+### 2. Configurar Banco de Dados
+```Bash
+# Instalar dependências
+npm install
+
+# Rodar migrações do Prisma
+npx prisma migrate dev --name init
+3. Iniciar a Aplicação
+Bash
+# Modo desenvolvimento
 npm run start:dev
 ```
+
+Acesse a API em: `http://localhost:3000`
+
+## 🧪 Testes
+A arquitetura permite estratégias de teste distintas e eficientes:
+
+### Testes Unitários (Domínio & Aplicação)
+Testam a lógica de negócio e os Use Cases usando o Repositório em Memória. Rodam em milissegundos, sem Docker.
+
+```Bash
+npm run test
+```
+Destaque: Graças ao polimorfismo, o ProductionService é testado trocando o PrismaRepository pelo InMemoryRepository via injeção de dependência.
+
+### Testes de Integração (Infraestrutura)
+Testam a conexão real com o MQTT e Banco de Dados usando Testcontainers.
+
+```Bash
+npm run test:e2e
+```
+
+## 📡 Endpoints Principais
+### Produção (HTTP REST)
+- POST /production: Cria uma ordem de produção.
+  - Regra: Rejeita se wasteLimitInKg > 10% da quantity.
+
+## Telemetria (Server-Sent Events)
+- GET /telemetry/stream: Stream de dados em tempo real das máquinas.
+  - Conecte um simulador MQTT na porta 1883 e veja os dados aparecerem aqui instantaneamente.
