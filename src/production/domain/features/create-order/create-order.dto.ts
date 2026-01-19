@@ -1,13 +1,9 @@
-import z from 'zod';
-import { ProductionOrderSchema } from '../../entities/production-order.schema';
+import { Schema } from 'effect';
 
-export const CreateProductionOrderSchema = ProductionOrderSchema.omit({
-  id: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export type CreateProductionOrderDto = z.infer<
-  typeof CreateProductionOrderSchema
->;
+export class CreateProductionOrderDto extends Schema.Class<CreateProductionOrderDto>(
+  'CreatePrderDto',
+)({
+  productName: Schema.String.pipe(Schema.minLength(3)),
+  quantity: Schema.Number.pipe(Schema.positive()),
+  wasteLimitInKg: Schema.Number.pipe(Schema.nonNegative()),
+}) {}

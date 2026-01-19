@@ -1,14 +1,11 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Effect, Either } from 'effect';
+import { Effect, Either, Schema } from 'effect';
 import mqtt from 'mqtt';
 import { Observable, Subject } from 'rxjs';
 import { TelemetryListener } from '../domain/telemetry-listener.port';
 import { InfraError } from '../domain/telemetry.errors';
-import {
-  MachineTelemetry,
-  MqttPayloadSchema,
-} from '../domain/telemetry.schema';
+import { MachineTelemetry, MqttPayload } from '../domain/telemetry.schema';
 
 @Injectable()
 export class MqttTelemetryListener
@@ -56,10 +53,7 @@ export class MqttTelemetryListener
       const error = result.left;
       Effect.runSync(
         Effect.logError(`Falha ao processar MQTT no tópico ${topic}`).pipe(
-          Effect.annotateLogs({
-            step: error.step,
-            details: String(error.originalError),
-          }),
+          Effect.annotateLogs({ error }),
         ),
       );
     }
@@ -77,16 +71,7 @@ export class MqttTelemetryListener
       );
 
       //Validate Schema
-      const rawData = yield* _(
-        Effect.try({
-          try: () => MqttPayloadSchema.parse(json),
-          catch: (e) =>
-            new InfraError({
-              step: 'ZOD_SCHEMA_VALIDATION',
-              originalError: e,
-            }),
-        }),
-      );
+      const rawData = yield* _(Schema.decodeUnknown(MqttPayload)(json));
 
       // Extract id
       const machineId = topic.split('/')[2] || rawData.machineId || 'UNKNOWN';

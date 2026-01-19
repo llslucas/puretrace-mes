@@ -1,4 +1,5 @@
 import { Effect, Either } from 'effect';
+import { ParseError } from 'effect/ParseResult';
 import { InMemoryProductionOrderRepository } from '../../../infra/in-memory-production-order-repository';
 import { ProductionOrderRepositoryTag } from '../../entities/production-order.repository';
 import { CreateProductionOrderDto } from './create-order.dto';
@@ -34,6 +35,32 @@ describe('[Use Case] Create Production Order', () => {
           wasteLimitInKg: validInput.wasteLimitInKg,
         }),
       );
+    }
+  });
+
+  it('should validate the input', async () => {
+    const invalidInput = {
+      product: 'Peça X1',
+      quant: 1000,
+      wasteLimit: 50,
+    } as unknown as CreateProductionOrderDto;
+
+    const repository = new InMemoryProductionOrderRepository();
+
+    const useCase = new CreateOrderUseCase();
+    const program = useCase.execute(invalidInput);
+    const safeProgram = Effect.either(program);
+
+    const runnable = safeProgram.pipe(
+      Effect.provideService(ProductionOrderRepositoryTag, repository),
+    );
+
+    const result = await Effect.runPromise(runnable);
+
+    expect(Either.isLeft(result)).toBe(true);
+
+    if (Either.isLeft(result)) {
+      expect(result.left).toBeInstanceOf(ParseError);
     }
   });
 });
