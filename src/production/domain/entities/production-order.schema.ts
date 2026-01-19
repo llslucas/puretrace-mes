@@ -11,14 +11,3 @@ export const ProductionOrderSchema = z.object({
 });
 
 export type ProductionOrder = z.infer<typeof ProductionOrderSchema>;
-
-export const CreateProductionOrderSchema = ProductionOrderSchema.omit({
-  id: true,
-  status: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export type CreateProductionOrderDto = z.infer<
-  typeof CreateProductionOrderSchema
->;

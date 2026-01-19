@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
-import { ProductionController } from './api/production.controller';
-import { ProductionService } from './application/production.service';
+import { PrismaService } from 'src/shared/database/prisma/prisma.service';
+import { ProductionController } from './api/create-order.controller';
 import { ProductionOrderRepository } from './domain/entities/production-order.repository';
 import { PrismaProductionOrderRepository } from './infra/prisma-production-order-repository';
-import { PrismaService } from 'src/shared/database/prisma/prisma.service';
 
 @Module({
   imports: [],
   controllers: [ProductionController],
   providers: [
-    ProductionService,
     PrismaService,
     {
       provide: ProductionOrderRepository,
