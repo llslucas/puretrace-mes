@@ -1,10 +1,8 @@
 import { Effect } from 'effect';
-import {
-  ProductionOrder,
-  CreateProductionOrderDto,
-} from './production-order.schema';
+import { ProductionOrder } from './production-order.schema';
 import { randomUUID } from 'node:crypto';
 import { InvalidWasteLimitError } from './production.errors';
+import { CreateProductionOrderDto } from '../features/create-order/create-order.dto';
 
 export const ProductionOrderModel = {
   create: (

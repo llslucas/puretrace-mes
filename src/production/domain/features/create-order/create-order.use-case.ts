@@ -1,7 +1,7 @@
 import { Effect } from 'effect';
-import { ProductionOrderModel } from '../entities/production-order.model';
-import { ProductionOrderRepositoryTag } from '../entities/production-order.repository';
-import { CreateProductionOrderDto } from '../entities/production-order.schema';
+import { ProductionOrderModel } from '../../entities/production-order.model';
+import { ProductionOrderRepositoryTag } from '../../entities/production-order.repository';
+import { CreateProductionOrderDto } from './create-order.dto';
 
 export class CreateOrderUseCase {
   execute(input: CreateProductionOrderDto) {

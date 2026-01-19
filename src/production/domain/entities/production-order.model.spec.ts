@@ -1,7 +1,7 @@
 import { Effect, Either } from 'effect';
 import { ProductionOrderModel } from './production-order.model';
-import { CreateProductionOrderDto } from './production-order.schema';
 import { InvalidWasteLimitError } from './production.errors';
+import { CreateProductionOrderDto } from '../features/create-order/create-order.dto';
 
 describe('ProductionOrderModel', () => {
   it('should create a valid production order when the waste is below the limit', () => {
