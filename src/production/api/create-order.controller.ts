@@ -6,21 +6,21 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import { Effect, Either } from 'effect';
-import { ZodValidationPipe } from 'src/shared/pipes/zod-validation.pipe';
+import { EffectValidationPipe } from 'src/shared/pipes/effect-validation.pipe';
 import {
   ProductionOrderRepository,
   ProductionOrderRepositoryTag,
 } from '../domain/entities/production-order.repository';
-import * as createOrderDto from '../domain/features/create-order/create-order.dto';
 import { CreateOrderUseCase } from '../domain/features/create-order/create-order.use-case';
+import { CreateProductionOrderDto } from '../domain/features/create-order/create-order.dto';
 
 @Controller('production')
 export class ProductionController {
   constructor(private readonly repository: ProductionOrderRepository) {}
 
   @Post()
-  @UsePipes(new ZodValidationPipe(createOrderDto.CreateProductionOrderSchema))
-  async handle(@Body() body: createOrderDto.CreateProductionOrderDto) {
+  @UsePipes(new EffectValidationPipe())
+  async handle(@Body() body: CreateProductionOrderDto) {
     const useCase = new CreateOrderUseCase();
     const program = useCase.execute(body);
     const safeProgram = Effect.either(program);
