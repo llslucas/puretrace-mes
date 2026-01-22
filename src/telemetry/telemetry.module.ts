@@ -1,15 +1,21 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TelemetryController } from './api/telemetry.controller';
 import { TelemetryService } from './application/telemetry.service';
 import { TelemetryListener } from './domain/entities/telemetry-listener.port';
-import { MqttTelemetryListener } from './infra/mqtt-telemetry-listener';
-import { ConfigModule } from '@nestjs/config';
+import { MachineEnvironmentHandler } from './infra/handlers/machine-environment.handler';
+import { MqttTelemetryListener } from './infra/mqtt-telemetry-listener/mqtt-telemetry-listener';
+import { TELEMETRY_HANDLER } from './infra/handlers/telemetry-handler.interface';
 
 @Module({
   imports: [ConfigModule],
   controllers: [TelemetryController],
   providers: [
     TelemetryService,
+    {
+      provide: TELEMETRY_HANDLER,
+      useClass: MachineEnvironmentHandler,
+    },
     {
       provide: TelemetryListener,
       useClass: MqttTelemetryListener,

@@ -4,6 +4,9 @@ import mqtt from 'mqtt';
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { MqttTelemetryListener } from './mqtt-telemetry-listener';
 import { Effect, Option, Stream } from 'effect';
+import { TELEMETRY_HANDLER } from '../handlers/telemetry-handler.interface';
+import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
+import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
 
 describe('[E2E] Telemetry', () => {
   let listener: MqttTelemetryListener;
@@ -37,15 +40,22 @@ describe('[E2E] Telemetry', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
-        MqttTelemetryListener,
         {
           provide: ConfigService,
           useValue: { get: () => brokerUrl },
         },
+        {
+          provide: TELEMETRY_HANDLER,
+          useClass: MachineEnvironmentHandler,
+        },
+        {
+          provide: TelemetryListener,
+          useClass: MqttTelemetryListener,
+        },
       ],
     }).compile();
 
-    listener = module.get<MqttTelemetryListener>(MqttTelemetryListener);
+    listener = module.get<MqttTelemetryListener>(TelemetryListener);
     await listener.onModuleInit();
 
     publisherClient = mqtt.connect(brokerUrl);
@@ -55,8 +65,8 @@ describe('[E2E] Telemetry', () => {
     await new Promise((r) => setTimeout(r, 500));
   });
 
-  afterEach(() => {
-    listener.onModuleDestroy();
+  afterEach(async () => {
+    await listener.onModuleDestroy();
   });
 
   it('should connect, receive the message and process.', async () => {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { TelemetryListener } from '../domain/entities/telemetry-listener.port';
 import { Stream } from 'effect';
+import { TelemetryListener } from '../domain/entities/telemetry-listener.port';
 import { MachineTelemetry } from '../domain/entities/telemetry.schema';
 
 @Injectable()

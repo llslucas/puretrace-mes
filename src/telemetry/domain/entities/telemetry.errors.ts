@@ -1,7 +1,7 @@
 import { Data } from 'effect';
 
-export class MqttProcessingError extends Data.TaggedClass(
-  'MqttProcessingError',
+export class TelemetryDataProcessingError extends Data.TaggedClass(
+  'TelemetryDataProcessingError',
 )<{
   readonly step: 'JSON_PARSE' | 'SCHEMA_VALIDATION';
   readonly originalError: Error;

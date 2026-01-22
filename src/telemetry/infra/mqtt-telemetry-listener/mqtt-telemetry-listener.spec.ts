@@ -1,7 +1,10 @@
+import mqtt from 'mqtt';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Effect, Option, Stream } from 'effect';
-import mqtt from 'mqtt';
+import { TELEMETRY_HANDLER } from '../handlers/telemetry-handler.interface';
+import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
+import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
 import { MqttTelemetryListener } from './mqtt-telemetry-listener';
 
 jest.mock('mqtt');
@@ -25,10 +28,20 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
     (mqtt.connect as jest.Mock).mockReturnValue(mqttClientMock);
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MqttTelemetryListener, ConfigService],
+      providers: [
+        ConfigService,
+        {
+          provide: TELEMETRY_HANDLER,
+          useClass: MachineEnvironmentHandler,
+        },
+        {
+          provide: TelemetryListener,
+          useClass: MqttTelemetryListener,
+        },
+      ],
     }).compile();
 
-    listener = module.get<MqttTelemetryListener>(MqttTelemetryListener);
+    listener = module.get<MqttTelemetryListener>(TelemetryListener);
     await listener.onModuleInit();
   });
 
