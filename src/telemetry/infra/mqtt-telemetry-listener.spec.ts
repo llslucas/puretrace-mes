@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Effect, Option, Stream } from 'effect';
 import mqtt from 'mqtt';
 import { MqttTelemetryListener } from './mqtt-telemetry-listener';
 
@@ -28,10 +29,12 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
     }).compile();
 
     listener = module.get<MqttTelemetryListener>(MqttTelemetryListener);
-    listener.onModuleInit();
+    await listener.onModuleInit();
   });
 
-  it('should convert the payload to domain object', () => {
+  it('should convert the payload to domain object', async () => {
+    const effectStream = listener.listen();
+
     const topic = 'fabrica/maquinas/MACHINE-01/telemetria';
 
     const telemetry = {
@@ -41,32 +44,44 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
     };
 
     const payload = JSON.stringify(telemetry);
-    const spy = jest.fn();
-
-    listener.listen().subscribe(spy);
 
     messageCallback(topic, Buffer.from(payload));
 
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        machineId: 'MACHINE-01',
-        status: 'NORMAL',
-        temperature: 88.5,
-        powerConsumption: 30,
-      }),
-    );
+    const result = await Stream.runHead(effectStream).pipe(Effect.runPromise);
+
+    expect(Option.isSome(result)).toBe(true);
+
+    if (Option.isSome(result)) {
+      expect(result.value).toMatchObject(telemetry);
+    }
   });
 
-  it('should ignore messages with invalid schema', () => {
-    const spy = jest.fn();
-    listener.listen().subscribe(spy);
+  it('should ignore messages with invalid schema', async () => {
+    const effectStream = listener.listen();
 
     const invalidPayload = {
       temperature: 50,
     };
 
+    const validPayload = {
+      machineId: 'MACHINE-01',
+      temperature: 88.5,
+      powerConsumption: 30,
+    };
+
     messageCallback('topic', Buffer.from(JSON.stringify(invalidPayload)));
 
-    expect(spy).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+
+    messageCallback('topic', Buffer.from(JSON.stringify(validPayload)));
+
+    const result = await Stream.runHead(effectStream).pipe(Effect.runPromise);
+
+    // O primeiro payload inválido será ignorado e apenas o segundo será exibido
+    expect(Option.isSome(result)).toBe(true);
+
+    if (Option.isSome(result)) {
+      expect(result.value).toMatchObject(validPayload);
+    }
   });
 });

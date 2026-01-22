@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { Observable, share } from 'rxjs';
-import { TelemetryListener } from '../domain/telemetry-listener.port';
-import { MachineTelemetry } from '../domain/telemetry.schema';
+import { TelemetryListener } from '../domain/entities/telemetry-listener.port';
+import { Stream } from 'effect';
+import { MachineTelemetry } from '../domain/entities/telemetry.schema';
 
 @Injectable()
 export class TelemetryService {
-  public telemetry$: Observable<MachineTelemetry>;
+  constructor(private readonly listener: TelemetryListener) {}
 
-  constructor(private readonly listener: TelemetryListener) {
-    this.telemetry$ = this.listener.listen().pipe(share());
+  getTelemetryStream(): Stream.Stream<MachineTelemetry> {
+    return this.listener.listen();
   }
 }
