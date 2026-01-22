@@ -1,9 +1,12 @@
-import mqtt from 'mqtt';
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
-import { firstValueFrom } from 'rxjs';
+import mqtt from 'mqtt';
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { MqttTelemetryListener } from './mqtt-telemetry-listener';
+import { Effect, Option, Stream } from 'effect';
+import { TELEMETRY_HANDLER } from '../handlers/telemetry-handler.interface';
+import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
+import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
 
 describe('[E2E] Telemetry', () => {
   let listener: MqttTelemetryListener;
@@ -37,16 +40,23 @@ describe('[E2E] Telemetry', () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
-        MqttTelemetryListener,
         {
           provide: ConfigService,
           useValue: { get: () => brokerUrl },
         },
+        {
+          provide: TELEMETRY_HANDLER,
+          useClass: MachineEnvironmentHandler,
+        },
+        {
+          provide: TelemetryListener,
+          useClass: MqttTelemetryListener,
+        },
       ],
     }).compile();
 
-    listener = module.get<MqttTelemetryListener>(MqttTelemetryListener);
-    listener.onModuleInit();
+    listener = module.get<MqttTelemetryListener>(TelemetryListener);
+    await listener.onModuleInit();
 
     publisherClient = mqtt.connect(brokerUrl);
     await new Promise((resolve) => publisherClient.on('connect', resolve));
@@ -55,8 +65,8 @@ describe('[E2E] Telemetry', () => {
     await new Promise((r) => setTimeout(r, 500));
   });
 
-  afterEach(() => {
-    listener.onModuleDestroy();
+  afterEach(async () => {
+    await listener.onModuleDestroy();
   });
 
   it('should connect, receive the message and process.', async () => {
@@ -67,15 +77,20 @@ describe('[E2E] Telemetry', () => {
       powerConsumption: 10,
     });
 
-    const dataPromise = firstValueFrom(listener.listen());
+    const effectStream = listener.listen();
 
     publisherClient.publish(topic, payload, { qos: 1 });
 
-    const result = await dataPromise;
-    expect(result).toMatchObject({
-      machineId: 'MACHINE-01',
-      temperature: 50,
-      powerConsumption: 10,
-    });
+    const result = await Stream.runHead(effectStream).pipe(Effect.runPromise);
+
+    expect(Option.isSome(result)).toBe(true);
+
+    if (Option.isSome(result)) {
+      expect(result.value).toMatchObject({
+        machineId: 'MACHINE-01',
+        temperature: 50,
+        powerConsumption: 10,
+      });
+    }
   }, 10000);
 });

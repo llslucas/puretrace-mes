@@ -1,6 +1,6 @@
-import { Observable } from 'rxjs';
+import { Stream } from 'effect';
 import { MachineTelemetry } from './telemetry.schema';
 
 export abstract class TelemetryListener {
-  abstract listen(): Observable<MachineTelemetry>;
+  abstract listen(): Stream.Stream<MachineTelemetry>;
 }

@@ -16,7 +16,7 @@ client.on('connect', () => {
       powerConsumption: parseFloat((Math.random() * 10).toFixed(2)),
     });
 
-    const topic = `fabrica/maquinas/${MACHINE_ID}/telemetria`;
+    const topic = `fabrica/maquinas/${MACHINE_ID}/environment`;
     client.publish(topic, payload);
 
     console.log(`Enviado: ${topic} -> ${payload}`);

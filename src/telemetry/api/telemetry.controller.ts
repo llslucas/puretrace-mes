@@ -1,19 +1,28 @@
-import { Controller, MessageEvent, Sse } from '@nestjs/common';
-import { map, Observable } from 'rxjs';
+import { Controller, Sse } from '@nestjs/common';
+import { Stream } from 'effect';
+import { Observable } from 'rxjs';
+import { streamToObservable } from 'src/shared/adapters/effect-rxjs.adapter';
 import { TelemetryService } from '../application/telemetry.service';
+import { MachineTelemetry } from '../domain/entities/telemetry.schema';
 
 @Controller('telemetry')
 export class TelemetryController {
   constructor(private readonly telemetryService: TelemetryService) {}
 
   @Sse('stream')
-  streamEvents(): Observable<MessageEvent> {
-    return this.telemetryService.telemetry$.pipe(
-      map((data) => ({
-        data: data,
-        type: 'machine_update',
-        id: new Date().getTime().toString(),
+  streamEvents(): Observable<MachineMessage> {
+    const effectStream = this.telemetryService.getTelemetryStream();
+
+    const mappedStream = effectStream.pipe(
+      Stream.map((telemetry) => ({
+        data: telemetry,
       })),
     );
+
+    return streamToObservable(mappedStream);
   }
+}
+
+interface MachineMessage {
+  data: MachineTelemetry;
 }
