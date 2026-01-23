@@ -9,7 +9,15 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Effect, PubSub, Queue, Stream, Console, Fiber } from 'effect';
+import {
+  Effect,
+  PubSub,
+  Queue,
+  Stream,
+  Console,
+  Fiber,
+  Schedule,
+} from 'effect';
 import {
   TELEMETRY_HANDLER,
   TelemetryHandler,
@@ -89,9 +97,9 @@ export class MqttTelemetryListener
     const pubSub = this.telemetryPubSub;
 
     const pipeline = Stream.fromQueue(this.processingQueue).pipe(
-      // Stream.tap((msg) =>
-      //   Console.log(`[DEBUG] Stream recebeu tópico: ${msg.topic}`),
-      // ),
+      Stream.tap((msg) =>
+        Console.log(`[DEBUG] Stream recebeu tópico: ${msg.topic}`),
+      ),
 
       Stream.mapEffect(
         ({ topic, payload }) =>
@@ -125,7 +133,7 @@ export class MqttTelemetryListener
 
             if (processedData) {
               yield* _(PubSub.publish(pubSub, processedData));
-              //yield* _(Console.log(`[DEBUG] Publicado no PubSub: ${topic}`));
+              yield* _(Console.log(`[DEBUG] Publicado no PubSub: ${topic}`));
             }
           }),
         { concurrency: 'unbounded' },
@@ -133,13 +141,25 @@ export class MqttTelemetryListener
       Stream.runDrain,
     );
 
-    const safeProgram = pipeline.pipe(
-      Effect.catchAllCause((cause) =>
-        Effect.logFatal(`Falha na Pipeline: ${cause.toString()}`),
-      ),
+    const failPolicy = Schedule.exponential('1 second').pipe(
+      Schedule.union(Schedule.spaced('30 seconds')),
     );
 
-    this.pipelineFiber = Effect.runFork(safeProgram);
+    const program = pipeline.pipe(
+      Effect.catchAllCause((cause) =>
+        Effect.logFatal(
+          `Falha na Pipeline: ${cause.toString()}\n\nREINICIANDO...`,
+        ).pipe(Effect.flatMap(() => Effect.fail(cause))),
+      ),
+
+      Effect.sandbox,
+
+      Effect.retry(failPolicy),
+
+      Effect.unsandbox,
+    );
+
+    this.pipelineFiber = Effect.runFork(program);
     console.log('Pipeline de Telemetria Iniciada');
   }
 }
