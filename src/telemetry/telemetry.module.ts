@@ -7,6 +7,7 @@ import { TelemetryListener } from './domain/entities/core/telemetry-listener.por
 import { MachineEnvironmentHandler } from './infra/handlers/machine-environment.handler';
 import { MqttTelemetryListener } from './infra/listeners/mqtt-telemetry-listener';
 import { TelemetryPipeline } from './infra/pipelines/telemetry.pipeline';
+import { ProductionEventHandler } from './infra/handlers/production-event.handler';
 
 @Module({
   imports: [ConfigModule],
@@ -19,12 +20,16 @@ import { TelemetryPipeline } from './infra/pipelines/telemetry.pipeline';
       useClass: MqttTelemetryListener,
     },
     MachineEnvironmentHandler,
+    ProductionEventHandler,
     {
       provide: TELEMETRY_HANDLER,
-      useFactory: (machineEnvironmentHandler: MachineEnvironmentHandler) => {
-        return [machineEnvironmentHandler];
+      useFactory: (
+        machineEnvironmentHandler: MachineEnvironmentHandler,
+        productionEventHandler: ProductionEventHandler,
+      ) => {
+        return [machineEnvironmentHandler, productionEventHandler];
       },
-      inject: [MachineEnvironmentHandler],
+      inject: [MachineEnvironmentHandler, ProductionEventHandler],
     },
   ],
 })
