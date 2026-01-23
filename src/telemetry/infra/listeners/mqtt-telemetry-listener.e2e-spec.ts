@@ -1,13 +1,13 @@
 import { ConfigService } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
+import { Effect, Option, Stream } from 'effect';
 import mqtt from 'mqtt';
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
-import { MqttTelemetryListener } from './mqtt-telemetry-listener';
-import { Effect, Option, Stream } from 'effect';
-import { TELEMETRY_HANDLER } from '../../domain/entities/core/telemetry-handler.interface';
-import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
 import { TelemetryListener } from '../../domain/entities/core/telemetry-listener.port';
 import { TelemetryPipeline } from '../pipelines/telemetry.pipeline';
+import { MqttTelemetryListener } from './mqtt-telemetry-listener';
+import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
+import { TELEMETRY_HANDLER } from '../../domain/entities/core/telemetry-handler.interface';
 
 describe('[E2E] Telemetry', () => {
   let listener: MqttTelemetryListener;
@@ -46,14 +46,20 @@ describe('[E2E] Telemetry', () => {
           useValue: { get: () => brokerUrl },
         },
         {
-          provide: TELEMETRY_HANDLER,
-          useClass: MachineEnvironmentHandler,
-        },
-        {
           provide: TelemetryListener,
           useClass: MqttTelemetryListener,
         },
         TelemetryPipeline,
+        MachineEnvironmentHandler,
+        {
+          provide: TELEMETRY_HANDLER,
+          useFactory: (
+            machineEnvironmentHandler: MachineEnvironmentHandler,
+          ) => {
+            return [machineEnvironmentHandler];
+          },
+          inject: [MachineEnvironmentHandler],
+        },
       ],
     }).compile();
 
@@ -72,7 +78,7 @@ describe('[E2E] Telemetry', () => {
   });
 
   it('should connect, receive the message and process.', async () => {
-    const topic = 'fabrica/maquinas/MACHINE-01/telemetria';
+    const topic = 'fabrica/maquinas/MACHINE-01/environment';
     const payload = JSON.stringify({
       machineId: 'MACHINE-01',
       temperature: 50,

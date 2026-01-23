@@ -16,7 +16,7 @@ export interface RawMessage {
 export class TelemetryPipeline {
   constructor(
     @Inject(TELEMETRY_HANDLER)
-    private readonly handlers: TelemetryHandler | TelemetryHandler[],
+    private readonly handlers: TelemetryHandler[],
   ) {}
 
   build(
@@ -33,13 +33,7 @@ export class TelemetryPipeline {
       Stream.mapEffect(
         ({ topic, payload }) =>
           Effect.gen(function* (_) {
-            let handler;
-
-            if (Array.isArray(handlers)) {
-              handler = handlers.find((h) => h.match(topic));
-            } else {
-              handler = handlers;
-            }
+            const handler = handlers.find((h) => h.match(topic));
 
             if (!handler) {
               return yield* _(
