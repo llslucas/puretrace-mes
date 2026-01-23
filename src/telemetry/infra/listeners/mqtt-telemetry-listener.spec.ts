@@ -1,10 +1,11 @@
-import mqtt from 'mqtt';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Effect, Option, Stream } from 'effect';
-import { TELEMETRY_HANDLER } from '../handlers/telemetry-handler.interface';
+import mqtt from 'mqtt';
+import { TELEMETRY_HANDLER } from '../../domain/entities/core/telemetry-handler.interface';
+import { TelemetryListener } from '../../domain/entities/core/telemetry-listener.port';
 import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
-import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
+import { TelemetryPipeline } from '../pipelines/telemetry.pipeline';
 import { MqttTelemetryListener } from './mqtt-telemetry-listener';
 
 jest.mock('mqtt');
@@ -30,13 +31,20 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ConfigService,
-        {
-          provide: TELEMETRY_HANDLER,
-          useClass: MachineEnvironmentHandler,
-        },
+        TelemetryPipeline,
         {
           provide: TelemetryListener,
           useClass: MqttTelemetryListener,
+        },
+        MachineEnvironmentHandler,
+        {
+          provide: TELEMETRY_HANDLER,
+          useFactory: (
+            machineEnvironmentHandler: MachineEnvironmentHandler,
+          ) => {
+            return [machineEnvironmentHandler];
+          },
+          inject: [MachineEnvironmentHandler],
         },
       ],
     }).compile();
@@ -48,7 +56,7 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
   it('should convert the payload to domain object', async () => {
     const effectStream = listener.listen();
 
-    const topic = 'fabrica/maquinas/MACHINE-01/telemetria';
+    const topic = 'fabrica/maquinas/MACHINE-01/environment';
 
     const telemetry = {
       machineId: 'MACHINE-01',
@@ -65,12 +73,15 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
     expect(Option.isSome(result)).toBe(true);
 
     if (Option.isSome(result)) {
-      expect(result.value).toMatchObject(telemetry);
+      expect(result.value.type).toEqual('Environment');
+      expect(result.value.data).toMatchObject(telemetry);
     }
   });
 
   it('should ignore messages with invalid schema', async () => {
     const effectStream = listener.listen();
+
+    const topic = 'fabrica/maquinas/MACHINE-01/environment';
 
     const invalidPayload = {
       temperature: 50,
@@ -82,11 +93,11 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
       powerConsumption: 30,
     };
 
-    messageCallback('topic', Buffer.from(JSON.stringify(invalidPayload)));
+    messageCallback(topic, Buffer.from(JSON.stringify(invalidPayload)));
 
     await new Promise((r) => setTimeout(r, 50));
 
-    messageCallback('topic', Buffer.from(JSON.stringify(validPayload)));
+    messageCallback(topic, Buffer.from(JSON.stringify(validPayload)));
 
     const result = await Stream.runHead(effectStream).pipe(Effect.runPromise);
 
@@ -94,7 +105,8 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
     expect(Option.isSome(result)).toBe(true);
 
     if (Option.isSome(result)) {
-      expect(result.value).toMatchObject(validPayload);
+      expect(result.value.type).toEqual('Environment');
+      expect(result.value.data).toMatchObject(validPayload);
     }
   });
 });

@@ -21,6 +21,25 @@ client.on('connect', () => {
 
     console.log(`Enviado: ${topic} -> ${payload}`);
   }, 2000);
+
+  let production = false;
+
+  setInterval(() => {
+    const MACHINE_ID = 'MACHINE-20';
+
+    const payload = JSON.stringify({
+      machineId: MACHINE_ID,
+      state: production ? 'RUNNING' : 'IDLE',
+      timestamp: new Date(),
+    });
+
+    production = !production;
+
+    const topic = `fabrica/maquinas/${MACHINE_ID}/production-event`;
+    client.publish(topic, payload);
+
+    console.log(`Enviado: ${topic} -> ${payload}`);
+  }, 10000);
 });
 
 function generateMachineId() {
