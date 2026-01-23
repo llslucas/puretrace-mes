@@ -2,6 +2,7 @@ import {
   Chunk,
   Effect,
   Fiber,
+  Option,
   PubSub,
   Queue,
   Stream,
@@ -37,7 +38,7 @@ describe('[Infra Layer] Telemetry Pipeline', () => {
               powerConsumption: 10,
             });
 
-            return telemetry;
+            return Option.some(telemetry);
           }),
       };
 

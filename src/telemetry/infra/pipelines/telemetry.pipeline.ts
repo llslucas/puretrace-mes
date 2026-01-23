@@ -3,7 +3,7 @@ import {
   TELEMETRY_HANDLER,
   TelemetryHandler,
 } from '../../domain/entities/core/telemetry-handler.interface';
-import { Console, Effect, PubSub, Schedule, Stream } from 'effect';
+import { Console, Effect, Option, PubSub, Schedule, Stream } from 'effect';
 import { TelemetryDataProcessingError } from '../../domain/entities/core/telemetry.errors';
 import { TelemetryData } from 'src/telemetry/domain/entities/core/telemetry-data.interface';
 
@@ -55,13 +55,13 @@ export class TelemetryPipeline {
                     error instanceof TelemetryDataProcessingError
                       ? `⚠️ Mensagem descartada: [${error.step}] ${error.originalError.message}`
                       : `⚠️ [Timeout] ${topic}`,
-                  ).pipe(Effect.as(null)),
+                  ).pipe(Option.none),
                 ),
               ),
             );
 
-            if (processedData) {
-              yield* _(PubSub.publish(pubSub, processedData));
+            if (Option.isSome(processedData)) {
+              yield* _(PubSub.publish(pubSub, processedData.value));
               yield* _(Console.log(`[DEBUG] Publicado no PubSub: ${topic}`));
             }
           }),

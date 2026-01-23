@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Effect } from 'effect';
+import { Effect, Option } from 'effect';
 import {
   EnvironmentData,
   EnvironmentDataModel,
@@ -18,7 +18,10 @@ export class MachineEnvironmentHandler implements TelemetryHandler<EnvironmentDa
   handle(
     topic: string,
     payload: Buffer,
-  ): Effect.Effect<EnvironmentDataModel, TelemetryDataProcessingError> {
+  ): Effect.Effect<
+    Option.Option<EnvironmentDataModel>,
+    TelemetryDataProcessingError
+  > {
     return Effect.gen(function* (_) {
       const useCase = new ProcessEnvironmentDataUseCase();
 
@@ -34,7 +37,7 @@ export class MachineEnvironmentHandler implements TelemetryHandler<EnvironmentDa
         }),
       );
 
-      return yield* _(useCase.execute(json));
+      return Option.some(yield* _(useCase.execute(json)));
     });
   }
 }
