@@ -6,6 +6,7 @@ import { TELEMETRY_HANDLER } from '../handlers/telemetry-handler.interface';
 import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
 import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
 import { MqttTelemetryListener } from './mqtt-telemetry-listener';
+import { TelemetryPipeline } from '../pipelines/telemetry.pipeline';
 
 jest.mock('mqtt');
 
@@ -30,6 +31,7 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ConfigService,
+        TelemetryPipeline,
         {
           provide: TELEMETRY_HANDLER,
           useClass: MachineEnvironmentHandler,

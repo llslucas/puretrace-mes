@@ -7,6 +7,7 @@ import { Effect, Option, Stream } from 'effect';
 import { TELEMETRY_HANDLER } from '../handlers/telemetry-handler.interface';
 import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
 import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
+import { TelemetryPipeline } from '../pipelines/telemetry.pipeline';
 
 describe('[E2E] Telemetry', () => {
   let listener: MqttTelemetryListener;
@@ -52,6 +53,7 @@ describe('[E2E] Telemetry', () => {
           provide: TelemetryListener,
           useClass: MqttTelemetryListener,
         },
+        TelemetryPipeline,
       ],
     }).compile();
 

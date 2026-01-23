@@ -1,33 +1,11 @@
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Effect, Fiber, PubSub, Queue, Stream } from 'effect';
+import { RuntimeFiber } from 'effect/Fiber';
 import mqtt from 'mqtt';
 import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
 import { MachineTelemetry } from '../../domain/entities/telemetry.schema';
-import { TelemetryDataProcessingError } from '../../domain/entities/telemetry.errors';
-import {
-  Inject,
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import {
-  Effect,
-  PubSub,
-  Queue,
-  Stream,
-  Console,
-  Fiber,
-  Schedule,
-} from 'effect';
-import {
-  TELEMETRY_HANDLER,
-  TelemetryHandler,
-} from '../handlers/telemetry-handler.interface';
-import { RuntimeFiber } from 'effect/Fiber';
-
-interface RawMessage {
-  topic: string;
-  payload: Buffer;
-}
+import { RawMessage, TelemetryPipeline } from '../pipelines/telemetry.pipeline';
 
 @Injectable()
 export class MqttTelemetryListener
@@ -35,8 +13,7 @@ export class MqttTelemetryListener
 {
   constructor(
     private readonly configService: ConfigService,
-    @Inject(TELEMETRY_HANDLER)
-    private readonly handlers: TelemetryHandler | TelemetryHandler[],
+    private readonly pipeline: TelemetryPipeline,
   ) {}
 
   listen(): Stream.Stream<MachineTelemetry> {
@@ -93,73 +70,12 @@ export class MqttTelemetryListener
   private startPipeLine() {
     if (!this.processingQueue || !this.telemetryPubSub) return;
 
-    const handlers = this.handlers;
-    const pubSub = this.telemetryPubSub;
+    const queueStream = Stream.fromQueue(this.processingQueue);
 
-    const pipeline = Stream.fromQueue(this.processingQueue).pipe(
-      Stream.tap((msg) =>
-        Console.log(`[DEBUG] Stream recebeu tópico: ${msg.topic}`),
-      ),
-
-      Stream.mapEffect(
-        ({ topic, payload }) =>
-          Effect.gen(function* (_) {
-            let handler;
-
-            if (Array.isArray(handlers)) {
-              handler = handlers.find((h) => h.match(topic));
-            } else {
-              handler = handlers;
-            }
-
-            if (!handler) {
-              return yield* _(
-                Effect.logDebug(`Tópico desconhecido ignorado: ${topic}`),
-              );
-            }
-
-            const processedData = yield* _(
-              handler.handle(topic, payload).pipe(
-                Effect.timeout('5 seconds'),
-                Effect.catchAll((error) =>
-                  Effect.logError(
-                    error instanceof TelemetryDataProcessingError
-                      ? `⚠️ Mensagem descartada: [${error.step}] ${error.originalError.message}`
-                      : `⚠️ [Timeout] ${topic}`,
-                  ).pipe(Effect.as(null)),
-                ),
-              ),
-            );
-
-            if (processedData) {
-              yield* _(PubSub.publish(pubSub, processedData));
-              yield* _(Console.log(`[DEBUG] Publicado no PubSub: ${topic}`));
-            }
-          }),
-        { concurrency: 'unbounded' },
-      ),
-      Stream.runDrain,
-    );
-
-    const failPolicy = Schedule.exponential('1 second').pipe(
-      Schedule.union(Schedule.spaced('30 seconds')),
-    );
-
-    const program = pipeline.pipe(
-      Effect.catchAllCause((cause) =>
-        Effect.logFatal(
-          `Falha na Pipeline: ${cause.toString()}\n\nREINICIANDO...`,
-        ).pipe(Effect.flatMap(() => Effect.fail(cause))),
-      ),
-
-      Effect.sandbox,
-
-      Effect.retry(failPolicy),
-
-      Effect.unsandbox,
-    );
+    const program = this.pipeline.build(queueStream, this.telemetryPubSub);
 
     this.pipelineFiber = Effect.runFork(program);
+
     console.log('Pipeline de Telemetria Iniciada');
   }
 }

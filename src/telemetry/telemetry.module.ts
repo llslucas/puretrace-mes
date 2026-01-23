@@ -6,12 +6,14 @@ import { TelemetryListener } from './domain/entities/telemetry-listener.port';
 import { MachineEnvironmentHandler } from './infra/handlers/machine-environment.handler';
 import { MqttTelemetryListener } from './infra/mqtt-telemetry-listener/mqtt-telemetry-listener';
 import { TELEMETRY_HANDLER } from './infra/handlers/telemetry-handler.interface';
+import { TelemetryPipeline } from './infra/pipelines/telemetry.pipeline';
 
 @Module({
   imports: [ConfigModule],
   controllers: [TelemetryController],
   providers: [
     TelemetryService,
+    TelemetryPipeline,
     {
       provide: TELEMETRY_HANDLER,
       useClass: MachineEnvironmentHandler,
