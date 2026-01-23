@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Effect } from 'effect';
-import { MachineTelemetry } from '../../domain/entities/telemetry.schema';
-import { TelemetryDataProcessingError } from '../../domain/entities/telemetry.errors';
-import { ProcessEnvironmentDataUseCase } from '../../domain/features/process-environment-data.use-case';
-import { TelemetryHandler } from './telemetry-handler.interface';
+import {
+  EnvironmentData,
+  EnvironmentDataModel,
+} from 'src/telemetry/domain/entities/models/environment-data.model';
+import { TelemetryHandler } from '../../domain/entities/core/telemetry-handler.interface';
+import { TelemetryDataProcessingError } from '../../domain/entities/core/telemetry.errors';
+import { ProcessEnvironmentDataUseCase } from '../../domain/features/environment/process-environment-data.use-case';
 
 @Injectable()
-export class MachineEnvironmentHandler implements TelemetryHandler {
+export class MachineEnvironmentHandler implements TelemetryHandler<EnvironmentData> {
   match(topic: string): boolean {
     console.log(topic);
     return topic.endsWith('/environment');
@@ -15,7 +18,7 @@ export class MachineEnvironmentHandler implements TelemetryHandler {
   handle(
     topic: string,
     payload: Buffer,
-  ): Effect.Effect<MachineTelemetry, TelemetryDataProcessingError> {
+  ): Effect.Effect<EnvironmentDataModel, TelemetryDataProcessingError> {
     return Effect.gen(function* (_) {
       const useCase = new ProcessEnvironmentDataUseCase();
 

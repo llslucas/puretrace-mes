@@ -2,10 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   TELEMETRY_HANDLER,
   TelemetryHandler,
-} from '../handlers/telemetry-handler.interface';
+} from '../../domain/entities/core/telemetry-handler.interface';
 import { Console, Effect, PubSub, Schedule, Stream } from 'effect';
-import { MachineTelemetry } from '../..//domain/entities/telemetry.schema';
-import { TelemetryDataProcessingError } from '../..//domain/entities/telemetry.errors';
+import { TelemetryDataProcessingError } from '../../domain/entities/core/telemetry.errors';
+import { TelemetryData } from 'src/telemetry/domain/entities/core/telemetry-data.interface';
 
 export interface RawMessage {
   topic: string;
@@ -21,7 +21,7 @@ export class TelemetryPipeline {
 
   build(
     sourceStream: Stream.Stream<RawMessage>,
-    pubSub: PubSub.PubSub<MachineTelemetry>,
+    pubSub: PubSub.PubSub<TelemetryData>,
   ): Effect.Effect<void> {
     const handlers = this.handlers;
 

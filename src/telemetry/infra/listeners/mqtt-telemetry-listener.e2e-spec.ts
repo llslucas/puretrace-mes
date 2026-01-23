@@ -4,9 +4,9 @@ import mqtt from 'mqtt';
 import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { MqttTelemetryListener } from './mqtt-telemetry-listener';
 import { Effect, Option, Stream } from 'effect';
-import { TELEMETRY_HANDLER } from '../handlers/telemetry-handler.interface';
+import { TELEMETRY_HANDLER } from '../../domain/entities/core/telemetry-handler.interface';
 import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
-import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
+import { TelemetryListener } from '../../domain/entities/core/telemetry-listener.port';
 import { TelemetryPipeline } from '../pipelines/telemetry.pipeline';
 
 describe('[E2E] Telemetry', () => {
@@ -88,7 +88,8 @@ describe('[E2E] Telemetry', () => {
     expect(Option.isSome(result)).toBe(true);
 
     if (Option.isSome(result)) {
-      expect(result.value).toMatchObject({
+      expect(result.value.type).toEqual('Environment');
+      expect(result.value.data).toMatchObject({
         machineId: 'MACHINE-01',
         temperature: 50,
         powerConsumption: 10,

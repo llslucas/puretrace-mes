@@ -3,7 +3,7 @@ import { Stream } from 'effect';
 import { Observable } from 'rxjs';
 import { streamToObservable } from 'src/shared/adapters/effect-rxjs.adapter';
 import { TelemetryService } from '../application/telemetry.service';
-import { MachineTelemetry } from '../domain/entities/telemetry.schema';
+import { TelemetryData } from '../domain/entities/core/telemetry-data.interface';
 
 @Controller('telemetry')
 export class TelemetryController {
@@ -24,5 +24,5 @@ export class TelemetryController {
 }
 
 interface MachineMessage {
-  data: MachineTelemetry;
+  data: TelemetryData;
 }

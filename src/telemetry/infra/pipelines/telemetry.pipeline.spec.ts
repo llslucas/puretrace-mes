@@ -1,23 +1,23 @@
 import {
+  Chunk,
   Effect,
+  Fiber,
   PubSub,
   Queue,
   Stream,
-  Chunk,
-  Fiber,
   TestClock,
   TestContext,
 } from 'effect';
-import { TelemetryHandler } from '../handlers/telemetry-handler.interface';
-import { TelemetryModel } from '../..//domain/entities/telemetry.model';
+import { TelemetryData } from 'src/telemetry/domain/entities/core/telemetry-data.interface';
+import { TelemetryHandler } from '../../domain/entities/core/telemetry-handler.interface';
+import { EnvironmentDataModel } from '../../domain/entities/models/environment-data.model';
 import { RawMessage, TelemetryPipeline } from './telemetry.pipeline';
-import { MachineTelemetry } from '../..//domain/entities/telemetry.schema';
 
 describe('[Infra Layer] Telemetry Pipeline', () => {
   it('should recover after a fatal error', async () => {
     return Effect.gen(function* (_) {
       const inputQueue = yield* _(Queue.unbounded<RawMessage>());
-      const pubSub = yield* _(PubSub.unbounded<MachineTelemetry>());
+      const pubSub = yield* _(PubSub.unbounded<TelemetryData>());
 
       let callCount = 0;
 
@@ -31,7 +31,7 @@ describe('[Infra Layer] Telemetry Pipeline', () => {
               throw new Error('Simulated Fatal Error');
             }
 
-            const telemetry = TelemetryModel.create({
+            const telemetry = EnvironmentDataModel.create({
               machineId: 'TEST-MACHINE',
               temperature: 80,
               powerConsumption: 10,

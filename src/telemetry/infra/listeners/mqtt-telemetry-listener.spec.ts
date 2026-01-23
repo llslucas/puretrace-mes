@@ -2,9 +2,9 @@ import mqtt from 'mqtt';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Effect, Option, Stream } from 'effect';
-import { TELEMETRY_HANDLER } from '../handlers/telemetry-handler.interface';
+import { TELEMETRY_HANDLER } from '../../domain/entities/core/telemetry-handler.interface';
 import { MachineEnvironmentHandler } from '../handlers/machine-environment.handler';
-import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
+import { TelemetryListener } from '../../domain/entities/core/telemetry-listener.port';
 import { MqttTelemetryListener } from './mqtt-telemetry-listener';
 import { TelemetryPipeline } from '../pipelines/telemetry.pipeline';
 
@@ -67,7 +67,8 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
     expect(Option.isSome(result)).toBe(true);
 
     if (Option.isSome(result)) {
-      expect(result.value).toMatchObject(telemetry);
+      expect(result.value.type).toEqual('Environment');
+      expect(result.value.data).toMatchObject(telemetry);
     }
   });
 
@@ -96,7 +97,8 @@ describe('[Infra Layer] MqttTelemetryListener', () => {
     expect(Option.isSome(result)).toBe(true);
 
     if (Option.isSome(result)) {
-      expect(result.value).toMatchObject(validPayload);
+      expect(result.value.type).toEqual('Environment');
+      expect(result.value.data).toMatchObject(validPayload);
     }
   });
 });

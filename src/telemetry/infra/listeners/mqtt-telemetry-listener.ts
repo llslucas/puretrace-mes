@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { Effect, Fiber, PubSub, Queue, Stream } from 'effect';
 import { RuntimeFiber } from 'effect/Fiber';
 import mqtt from 'mqtt';
-import { TelemetryListener } from '../../domain/entities/telemetry-listener.port';
-import { MachineTelemetry } from '../../domain/entities/telemetry.schema';
+import { TelemetryListener } from '../../domain/entities/core/telemetry-listener.port';
 import { RawMessage, TelemetryPipeline } from '../pipelines/telemetry.pipeline';
+import { TelemetryData } from 'src/telemetry/domain/entities/core/telemetry-data.interface';
 
 @Injectable()
 export class MqttTelemetryListener
@@ -16,14 +16,14 @@ export class MqttTelemetryListener
     private readonly pipeline: TelemetryPipeline,
   ) {}
 
-  listen(): Stream.Stream<MachineTelemetry> {
+  listen(): Stream.Stream<TelemetryData> {
     if (!this.telemetryPubSub) return Stream.empty;
     return Stream.fromPubSub(this.telemetryPubSub);
   }
 
   private mqttClient: mqtt.MqttClient | null = null;
   private processingQueue: Queue.Queue<RawMessage> | null = null;
-  private telemetryPubSub: PubSub.PubSub<MachineTelemetry> | null = null;
+  private telemetryPubSub: PubSub.PubSub<TelemetryData> | null = null;
   private pipelineFiber: RuntimeFiber<any, any> | null = null;
 
   async onModuleInit() {
