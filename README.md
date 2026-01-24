@@ -11,11 +11,11 @@ O **PureTrace** é um backend industrial robusto desenvolvido em **Node.js (Nest
 Este projeto foi desenvolvido como um projeto de portfólio avançado, demonstrando a união entre a robustez corporativa do NestJS e a segurança matemática da Programação Funcional.
 
 ### 1. Domain-Driven Design (DDD) & Rich Models
-A lógica de negócio não está espalhada em Services. Ela reside em **Entidades Ricas**.
+A lógica de negócio não está espalhada em Services. Ela reside em **Models** e **Use Cases**.
 * **Exemplo:** A regra de que *"o desperdício não pode exceder 10%"* não é uma validação no Controller ou Service. Ela pertence à entidade `ProductionOrderModel`. É impossível instanciar uma ordem inválida no sistema.
 
 ### 2. Functional Core, Imperative Shell
-Utilizamos a biblioteca **[Effect](https://effect.website/)** para criar um núcleo funcional puro.
+Foi utilizada a biblioteca **[Effect](https://effect.website/)** para criar um núcleo funcional puro.
 * **Core (Domínio/Use Cases):** Funções puras, sem exceções (`throw`), retornando descrições de programas (`Effect<Success, Error>`).
 * **Shell (NestJS):** Lida com a injeção de dependência, controllers HTTP e conexão com banco de dados, executando os efeitos na "borda" do sistema.
 
@@ -23,7 +23,7 @@ Utilizamos a biblioteca **[Effect](https://effect.website/)** para criar um núc
 A aplicação desconhece o banco de dados ou o protocolo de IoT.
 * **Ports:** Interfaces definidas no Domínio (ex: `ProductionOrderRepository`, `TelemetryListener`).
 * **Adapters:** Implementações na Infraestrutura (ex: `PrismaProductionOrderRepository`, `MqttTelemetryListener`).
-Isso nos permite trocar Postgres por In-Memory ou MQTT por Kafka sem tocar numa linha de regra de negócio.
+Isso nos permite trocar Postgres por In-Memory ou MQTT por Kafka sem modificar a regra de negócio.
 
 ---
 
@@ -33,35 +33,46 @@ Isso nos permite trocar Postgres por In-Memory ou MQTT por Kafka sem tocar numa 
 * **Linguagem:** TypeScript (Strict Mode).
 * **Functional Lib:** [Effect](https://effect.website/) (Error Handling, Pipelines).
 * **Database:** PostgreSQL + [Prisma ORM](https://www.prisma.io/).
-* **Real-time:** [RxJS](https://rxjs.dev/) + Server-Sent Events (SSE).
+* **Real-time:** [Effect Streams](https://effect.website/) + [RxJS](https://rxjs.dev/) + Server-Sent Events (SSE).
 * **IoT:** MQTT (Mosquitto) para telemetria de máquinas.
-* **Validation:** [Zod](https://zod.dev/).
+* **Validation:** [Effect Schema](https://effect.website/).
 * **Infra:** Docker & Docker Compose.
 
 ---
 
-## 📂 Estrutura de Pastas (Screaming Architecture)
+## 📂 Estrutura de Pastas
 
 A estrutura reflete a intenção do sistema, não apenas tipos de arquivos.
 
 ```text
 src/
 ├── production/
-│   ├── api/                     # Controllers (Interface Layer)
-│   ├── application/             # Services NestJS (Orquestradores)
-│   ├── domain/                  # O Núcleo Puro (Sem NestJS, sem Prisma)
-│   │   ├── entities/            # Entidades (Interfaces e Models)
-│   │   ├── use-cases/           # Regras de fluxo (ex: CreateOrderUseCase)
-│   ├── infra/                   # Repositórios
-│   └── production.module.ts     # Wiring (Injeção de Dependência)
-├── telemetry/                   # Módulo de Monitoramento IoT
-│   ├── domain/                  # Portas e Tipos
-│   ├── infra/                   # Adaptador MQTT (Hexagonal)
-│   └── api/                     # Controller SSE (Real-time stream)
+│   ├── api/                          # Controllers (Interface Layer)
+│   ├── domain/                       # O Núcleo Puro (Sem NestJS, sem Prisma)
+│   │   ├── entities/                 # Entidades (Interfaces e Models)
+│   │   └── features/                 # Regras de fluxo (ex: CreateOrderUseCase)
+│   └── infra/                        # Repositórios
+├── telemetry/                        # Módulo de Monitoramento IoT
+│   ├── api/                          # Controller SSE (Real-time stream)
+│   ├── application/                  # Services NestJS
+│   ├── domain/                       # Portas e Tipos
+│   │   ├── entities/                 # Entidades (Interfaces e Models)
+│   │   │   ├── core/                 # Interfaces e classes abstradas
+│   │   │   └── models/               # Models e Dtos
+│   │   └── features/                 # Regras de fluxo (ex: CreateOrderUseCase)
+│   │       ├── environment/          # Fluxo de processamento da telemetria ambiental (Temperatura e consumo de energia)
+│   │       └── production-event/     # Fluxo de processamento da telemetria dos eventos de produção
+│   ├── infra/                        # Adaptador MQTT
+│   │   ├── handlers/                 # Implementação Processadores de eventos de Telemetria
+│   │   ├── listeners/                # Entrypoint dos eventos de telemetria do broker externo
+│   │   └── pipelines/                # Pipeline de processamento da stream de telemetria
 ├── shared/
-│   ├── pipes/                   # Pipes de Validação do Nest
-└── └── database/                # Implementação concreta do Database Module para uso em vários domínios se necessário
+│   ├── adapters/                     # Adaptadores gerais (RxJs Wrapper)
+│   ├── pipes/                        # Pipes de Validação do Nest
+└── └── database/                     # Implementação concreta do Database Module para uso em vários domínios se necessário
 ```
+
+---
 
 ## 🚀 Como Rodar
 ### Pré-requisitos
@@ -71,7 +82,7 @@ src/
 ### 1. Subir Infraestrutura (Banco + Broker MQTT)
 
 ```Bash
-docker-compose up -d
+npm run services:up
 ```
 
 Isso iniciará o PostgreSQL (porta 5432) e o Mosquitto MQTT (porta 1883).
@@ -80,16 +91,22 @@ Isso iniciará o PostgreSQL (porta 5432) e o Mosquitto MQTT (porta 1883).
 ```Bash
 # Instalar dependências
 npm install
+```
 
-# Rodar migrações do Prisma
+#### Rodar migrações do Prisma
+```Bash
 npx prisma migrate dev --name init
-3. Iniciar a Aplicação
-Bash
+```
+
+### 3. Iniciar a Aplicação
+```Bash
 # Modo desenvolvimento
 npm run start:dev
 ```
 
 Acesse a API em: `http://localhost:3000`
+
+---
 
 ## 🧪 Testes
 A arquitetura permite estratégias de teste distintas e eficientes:
@@ -109,6 +126,8 @@ Testam a conexão real com o MQTT e Banco de Dados usando Testcontainers.
 npm run test:e2e
 ```
 
+---
+
 ## 📡 Endpoints Principais
 ### Produção (HTTP REST)
 - POST /production: Cria uma ordem de produção.
@@ -117,3 +136,22 @@ npm run test:e2e
 ## Telemetria (Server-Sent Events)
 - GET /telemetry/stream: Stream de dados em tempo real das máquinas.
   - Conecte um simulador MQTT na porta 1883 e veja os dados aparecerem aqui instantaneamente.
+
+Para executar o simulador MQTT, execute o seguinte comando:
+
+```Bash
+npx ts-node mqtt-simulator.ts
+```
+
+---
+
+# 📅 Roadmap Futuro
+
+- [ ] Refatorar e exapandir a cobertura dos testes unitários e de integração.
+- [ ] Implementar persistência de eventos de produção.
+- [ ] Implementar fluxo de produção com domain events entre as camadas `production` e `telemetry`.
+- [ ] Migrar persistência de estado dos Handlers da Memória para o Redis.
+
+---
+
+Desenvolvido com 💜 e Programação Funcional.
