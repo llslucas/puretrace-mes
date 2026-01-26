@@ -50,9 +50,7 @@ describe('[E2E] Telemetry Controller', () => {
     let receivedCount = 0;
 
     eventSource.addEventListener('open', () => {
-      console.log('A conexão com a stream foi estabelecida');
-
-      // Publica a mensagem no broker mqtt após um delay
+      // Publica a mensagem no broker mqtt 500ms após a contexão bem sucedida
       setTimeout(() => {
         const topic = 'fabrica/maquinas/MACHINE-01/environment';
         const payload = JSON.stringify({
