@@ -1,9 +1,9 @@
 import { Effect, Either } from 'effect';
 import { ParseError } from 'effect/ParseResult';
-import { InMemoryProductionOrderRepository } from '../../../infra/in-memory-production-order-repository';
 import { ProductionOrderRepositoryTag } from '../../entities/production-order.repository';
 import { CreateProductionOrderDto } from './create-order.dto';
 import { CreateOrderUseCase } from './create-order.use-case';
+import { InMemoryProductionOrderRepository } from 'test/repositories/in-memory-production-order-repository';
 
 describe('[Use Case] Create Production Order', () => {
   it('should create a production order with a valid input', async () => {

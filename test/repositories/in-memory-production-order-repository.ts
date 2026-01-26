@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Effect } from 'effect';
-import { ProductionOrder } from '../domain/entities/production-order.schema';
 import {
   ProductionOrderRepository,
   RepositoryError,
-} from '../domain/entities/production-order.repository';
+} from 'src/production/domain/entities/production-order.repository';
+import { ProductionOrder } from 'src/production/domain/entities/production-order.schema';
 
 @Injectable()
 export class InMemoryProductionOrderRepository implements ProductionOrderRepository {
