@@ -39,8 +39,8 @@ describe('[E2E] Create Order Controller', () => {
   }, 60000);
 
   afterAll(async () => {
-    await app.close();
-    await container.stop();
+    if (app) await app.close();
+    if (container) await container.stop();
   });
 
   it('should create an order successfully', async () => {
@@ -67,5 +67,33 @@ describe('[E2E] Create Order Controller', () => {
         ...productionOrder,
       }),
     );
+  });
+
+  it('should reject a invalid payload', async () => {
+    const productionOrder = {
+      invalidName: 'Peça X1',
+      quantity: 1000,
+      wasteLimitInKg: 50,
+    };
+
+    const response = await fetch(`${url}/production`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: JSON.stringify(productionOrder),
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.status).toBe(400);
+
+    const result = (await response.json()) as unknown;
+
+    expect(result).toEqual({
+      message: 'Validation failed',
+      errors: expect.objectContaining({
+        _id: 'ParseError',
+      }) as unknown,
+    });
   });
 });
