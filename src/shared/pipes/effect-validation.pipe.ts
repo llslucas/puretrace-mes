@@ -4,7 +4,6 @@ import {
   PipeTransform,
 } from '@nestjs/common';
 import { Either, Schema } from 'effect';
-import { TreeFormatter } from 'effect/ParseResult';
 
 export class EffectValidationPipe implements PipeTransform {
   transform(value: unknown, metadata: ArgumentMetadata) {
@@ -18,10 +17,9 @@ export class EffectValidationPipe implements PipeTransform {
 
     if (Either.isLeft(program)) {
       const error = program.left;
-      const message = TreeFormatter.formatError(error);
       throw new BadRequestException({
         message: 'Validation failed',
-        errors: message,
+        errors: error,
       });
     }
 
