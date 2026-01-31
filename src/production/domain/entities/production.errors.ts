@@ -1,6 +1,6 @@
 import { Data } from 'effect';
 
-export class InvalidWasteLimitError extends Data.TaggedClass(
+export class InvalidWasteLimitError extends Data.TaggedError(
   'InvalidWasteLimitError',
 )<{
   readonly message: string;
@@ -8,7 +8,7 @@ export class InvalidWasteLimitError extends Data.TaggedClass(
   readonly actual: number;
 }> {}
 
-export class ProductionStatusError extends Data.TaggedClass(
+export class ProductionStatusError extends Data.TaggedError(
   'ProductionStatusError',
 )<{
   readonly message: string;

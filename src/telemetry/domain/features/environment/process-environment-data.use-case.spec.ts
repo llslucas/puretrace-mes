@@ -47,11 +47,11 @@ describe('[Domain] Process environment data use case', () => {
 
       const result = yield* Effect.either(useCase.execute(input)).pipe(
         Effect.map(Either.getLeft),
-        Effect.andThen(Option.getOrThrow),
+        Effect.map(Option.getOrNull),
       );
 
       expect(result).toBeInstanceOf(TelemetryDataProcessingError);
-      expect(result.step).toBe('SCHEMA_VALIDATION');
+      expect(result?.step).toBe('SCHEMA_VALIDATION');
     }).pipe(Effect.runSync);
   });
 });
