@@ -12,14 +12,13 @@ export class ProcessEnvironmentDataUseCase {
     return Effect.gen(function* (_) {
       //Validate Schema
       const rawData = yield* _(
-        Schema.decodeUnknown(EnvironmentDataDto)(input).pipe(
-          Effect.mapError((e) => {
-            return new TelemetryDataProcessingError({
-              step: 'SCHEMA_VALIDATION',
-              originalError: e,
-            });
-          }),
-        ),
+        Schema.decodeUnknown(EnvironmentDataDto)(input),
+        Effect.mapError((e) => {
+          return new TelemetryDataProcessingError({
+            step: 'SCHEMA_VALIDATION',
+            originalError: e,
+          });
+        }),
       );
 
       const telemetry = EnvironmentDataModel.create(rawData);

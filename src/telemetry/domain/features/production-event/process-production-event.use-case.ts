@@ -11,15 +11,13 @@ export class ProcessProductionEventUseCase {
       const rawData = [previous, current];
 
       const data = yield* _(
-        Schema.decodeUnknown(Schema.Array(ProductionEventDto))(rawData).pipe(
-          Effect.mapError(
-            (e) =>
-              new TelemetryDataProcessingError({
-                step: 'SCHEMA_VALIDATION',
-                originalError: e,
-              }),
-          ),
-        ),
+        Schema.decodeUnknown(Schema.Array(ProductionEventDto))(rawData),
+        Effect.mapError((e) => {
+          return new TelemetryDataProcessingError({
+            step: 'SCHEMA_VALIDATION',
+            originalError: e,
+          });
+        }),
       );
 
       const telemetry = ProductionEventDataModel.create(data);
