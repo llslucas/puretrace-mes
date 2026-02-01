@@ -47,9 +47,9 @@ export class TelemetryPipeline {
                 Effect.catchAll((error) =>
                   Effect.logError(
                     error instanceof TelemetryDataProcessingError
-                      ? `⚠️ Mensagem descartada: [${error.step}] ${error.originalError.message}`
+                      ? `⚠️ Mensagem descartada:\n[${error.step}] ${error.originalError.message}`
                       : `⚠️ [Timeout] ${topic}`,
-                  ).pipe(Option.none),
+                  ).pipe(Effect.as(Option.none<TelemetryData>())),
                 ),
               ),
             );

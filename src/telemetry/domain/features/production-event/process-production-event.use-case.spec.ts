@@ -73,10 +73,10 @@ describe('[Domain] Process production event use case', () => {
 
       const result = yield* Effect.either(
         useCase.execute([previous, current]),
-      ).pipe(Effect.map(Either.getLeft), Effect.andThen(Option.getOrThrow));
+      ).pipe(Effect.map(Either.getLeft), Effect.map(Option.getOrNull));
 
       expect(result).toBeInstanceOf(TelemetryDataProcessingError);
-      expect(result.step).toBe('SCHEMA_VALIDATION');
+      expect(result?.step).toBe('SCHEMA_VALIDATION');
     }).pipe(Effect.runSync);
   });
 });

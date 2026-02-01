@@ -55,10 +55,10 @@ describe('[Infra Layer] Machine Environment Layer', () => {
 
       const result = yield* Effect.either(
         machineEnvironmentHandler.handle(topic, bufferPayload),
-      ).pipe(Effect.map(Either.getLeft), Effect.andThen(Option.getOrThrow));
+      ).pipe(Effect.map(Either.getLeft), Effect.map(Option.getOrNull));
 
       expect(result).toBeInstanceOf(TelemetryDataProcessingError);
-      expect(result.step).toEqual('JSON_PARSE');
+      expect(result?.step).toEqual('JSON_PARSE');
     }).pipe(Effect.runSync);
   });
 });
