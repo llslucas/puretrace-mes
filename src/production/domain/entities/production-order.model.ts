@@ -1,7 +1,10 @@
 import { Effect } from 'effect';
 import { ProductionOrder } from './production-order.schema';
 import { randomUUID } from 'node:crypto';
-import { InvalidWasteLimitError } from './production.errors';
+import {
+  InvalidWasteLimitError,
+  ProductionStatusError,
+} from './production.errors';
 import { CreateProductionOrderDto } from '../features/create-order/create-order.dto';
 
 export const ProductionOrderModel = {
@@ -35,12 +38,16 @@ export const ProductionOrderModel = {
 
   startProduction: (
     order: ProductionOrder,
-  ): Effect.Effect<ProductionOrder, Error> => {
+  ): Effect.Effect<ProductionOrder, ProductionStatusError> => {
     if (order.status !== 'PENDING') {
       return Effect.fail(
-        new Error('Apenas ordens PENDING podem ser iniciadas.'),
+        new ProductionStatusError({
+          message: 'Apenas ordens PENDING podem ser iniciadas.',
+          currentStatus: order.status,
+        }),
       );
     }
+
     return Effect.succeed({
       ...order,
       status: 'IN_PROGRESS',
