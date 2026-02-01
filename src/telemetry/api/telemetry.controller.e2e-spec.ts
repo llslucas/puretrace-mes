@@ -6,6 +6,7 @@ import { MosquittoContainerFactory } from 'test/factories/containers/mosquitto-c
 import { StartedTestContainer } from 'testcontainers';
 import { TelemetryData } from '../domain/entities/core/telemetry-data.interface';
 import { TelemetryModule } from '../telemetry.module';
+import { EnvironmentData } from '../domain/entities/models/environment-data.model';
 
 describe('[E2E] Telemetry Controller', () => {
   let app: INestApplication;
@@ -60,11 +61,11 @@ describe('[E2E] Telemetry Controller', () => {
         });
 
         publisherClient.publish(topic, payload, { qos: 1 });
-      }, 500);
+      }, 100);
     });
 
     eventSource.addEventListener('message', (event: MessageEvent<string>) => {
-      const result = JSON.parse(event.data) as TelemetryData;
+      const result = JSON.parse(event.data) as TelemetryData<EnvironmentData>;
       receivedCount++;
 
       expect(receivedCount).toBe(1);
@@ -78,6 +79,54 @@ describe('[E2E] Telemetry Controller', () => {
       );
 
       if (receivedCount > 0) {
+        eventSource.close();
+        done();
+      }
+    });
+
+    eventSource.addEventListener('error', (error) => {
+      if (error) {
+        eventSource.close();
+        done(error);
+      }
+    });
+  }, 10000);
+
+  it('should ignore corrupted data', (done) => {
+    const eventSource = new EventSource(`${url}/telemetry/stream`);
+
+    let receivedCount = 0;
+
+    eventSource.addEventListener('open', () => {
+      // Publica a mensagem no broker mqtt 500ms após a contexão bem sucedida
+      setTimeout(() => {
+        const topic = 'fabrica/maquinas/MACHINE-01/environment';
+        const payload = JSON.stringify({
+          machineId: 'MACHINE-01',
+          temperature: 50,
+          powerConsumption: 10,
+        });
+
+        const corruptedPayload = payload + '@#$@#$';
+
+        const payload2 = JSON.stringify({
+          machineId: 'MACHINE-02',
+          temperature: 50,
+          powerConsumption: 10,
+        });
+
+        publisherClient.publish(topic, payload, { qos: 1 });
+        publisherClient.publish(topic, corruptedPayload, { qos: 1 });
+        publisherClient.publish(topic, payload2, { qos: 1 });
+      }, 100);
+    });
+
+    eventSource.addEventListener('message', (event: MessageEvent<string>) => {
+      const result = JSON.parse(event.data) as TelemetryData<EnvironmentData>;
+      receivedCount++;
+
+      if (receivedCount >= 2) {
+        expect(result.data.machineId).toEqual('MACHINE-02');
         eventSource.close();
         done();
       }
