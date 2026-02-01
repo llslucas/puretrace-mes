@@ -1,4 +1,4 @@
-import { Effect, Exit, Fiber, Stream } from 'effect';
+import { Cause, Effect, Exit, Fiber, Stream } from 'effect';
 import { Observable } from 'rxjs';
 
 export const streamToObservable = <A, E>(
@@ -16,7 +16,7 @@ export const streamToObservable = <A, E>(
     // Adiciona um listener para quando a stream terminar
     fiber.addObserver((exit) => {
       if (Exit.isFailure(exit)) {
-        const error = Exit.causeOption(exit);
+        const error = Cause.squash(exit.cause);
         subscriber.error(error);
       } else {
         subscriber.complete();
